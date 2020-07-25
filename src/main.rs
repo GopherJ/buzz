@@ -79,6 +79,7 @@ impl<T: Read + Write + imap::extensions::idle::SetReadTimeout> Connection<T> {
                 "connection to {} lost; trying to reconnect...",
                 self.account.name
             );
+
             match self.account.connect() {
                 Ok(c) => {
                     println!("{} connection reestablished", self.account.name);
@@ -213,6 +214,7 @@ impl<T: Read + Write + imap::extensions::idle::SetReadTimeout> Connection<T> {
 
                 println!("> {}", title);
                 println!("{}", body);
+
                 if let Some(mut n) = notification.take() {
                     n.summary(&title).body(&format!(
                         "{}",
@@ -252,7 +254,7 @@ impl<T: Read + Write + imap::extensions::idle::SetReadTimeout> Connection<T> {
 
 #[inline]
 fn parse_failed<T>(key: &str, typename: &str) -> Option<T> {
-    println!("Failed to parse '{}' as {}", key, typename);
+    eprintln!("Failed to parse '{}' as {}", key, typename);
     None
 }
 
@@ -273,13 +275,16 @@ fn main() {
         };
         let mut s = String::new();
         if let Err(e) = f.read_to_string(&mut s) {
-            println!("Could not read configuration file buzz.toml: {}", e);
+            eprintln!("Could not read configuration file buzz.toml: {}", e);
             return;
         }
         match s.parse::<toml::Value>() {
             Ok(t) => t,
             Err(e) => {
-                println!("Could not parse configuration file buzz.toml: {}", e);
+                eprintln!(
+                    "Could not parse configuration file buzz.toml: {}",
+                    e
+                );
                 return;
             }
         }
@@ -291,7 +296,7 @@ fn main() {
             .iter()
             .filter_map(|(name, v)| match v.as_table() {
                 None => {
-                    println!(
+                    eprintln!(
                         "Configuration for account {} is broken: not a table",
                         name
                     );
@@ -312,7 +317,7 @@ fn main() {
                             String::from_utf8_lossy(&output.stdout).into_owned()
                         }
                         Err(e) => {
-                            println!(
+                            eprintln!(
                                 "Failed to launch password command for {}: {}",
                                 name, e
                             );
@@ -392,7 +397,7 @@ fn main() {
         window.quit();
         Ok::<_, systray::Error>(())
     }) {
-        println!("Could not add application Quit menu option: {}", e);
+        eprintln!("Could not add application Quit menu option: {}", e);
     }
 
     // TODO: w.set_tooltip(&"Whatever".to_string());
