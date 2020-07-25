@@ -3,12 +3,13 @@
 use native_tls::{TlsConnector, TlsStream};
 use rayon::prelude::*;
 
+use chrono::{Local, TimeZone};
+use directories_next::ProjectDirs;
+
 use std::{
     borrow::Cow, collections::BTreeMap, fs::File, io::prelude::*,
     net::TcpStream, process::Command, sync::mpsc, thread, time::Duration,
 };
-
-use directories_next::ProjectDirs;
 
 #[derive(Clone)]
 struct Account {
@@ -140,19 +141,17 @@ impl<T: Read + Write + imap::extensions::idle::SetReadTimeout> Connection<T> {
 
                             let date = match headers.get_first_value("Date") {
                                 Some(date) => {
-                                    match chrono::DateTime::parse_from_rfc2822(
-                                        &date,
-                                    ) {
-                                        Ok(date) => {
-                                            date.with_timezone(&chrono::Local)
+                                    match mailparse::dateparse(&date) {
+                                        Ok(timestamp) => {
+                                            Local.timestamp(timestamp, 0)
                                         }
                                         Err(e) => {
-                                            eprintln!("failed to parse message date: {:?}", e);
-                                            chrono::Local::now()
+                                            eprintln!("failed to parse message date: {}", e);
+                                            Local::now()
                                         }
                                     }
                                 }
-                                None => chrono::Local::now(),
+                                None => Local::now(),
                             };
 
                             subjects.insert(date, subject);
